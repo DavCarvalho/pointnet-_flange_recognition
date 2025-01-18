@@ -1,114 +1,160 @@
-1. Configuração do Ambiente Python
+# PointNet++ Project Setup Guide
 
-# Criar ambiente virtual (recomendado Python 3.7 ou 3.8)
+## Table of Contents
 
+- [Environment Setup](#environment-setup)
+- [Installation](#installation)
+- [Project Structure](#project-structure)
+- [Troubleshooting](#troubleshooting)
+
+## Environment Setup
+
+### Prerequisites
+
+- CUDA 12.4
+- Python 3.8 (recommended)
+- Conda package manager
+
+### Creating Virtual Environment
+
+```bash
 conda create -n pointnet_env python=3.8
 conda activate pointnet_env
+```
 
-# Instalar as dependências
+## Installation
 
-## instalação do pytorch com a versão do cudsa 12.4
+### 1. PyTorch Installation
 
+Install PyTorch with CUDA support:
+
+```bash
 conda install pytorch==2.4.1 torchvision==0.19.1 cudatoolkit=12.4 -c pytorch
+```
 
-## Instalação do Pointnet++
+### 2. PointNet++ Setup
 
-### Clonar o repositório do Pointnet++
+Clone and install PointNet++:
 
+```bash
 git clone https://github.com/erikwijmans/Pointnet2_PyTorch.git
-
-### Entrar no diretório
-
 cd Pointnet2_PyTorch
-
-### Instalar dependências
-
 pip install -r requirements.txt
+```
 
-### Instalar o pointnet2_ops_lib
+### 3. Install pointnet2_ops_lib
 
+Navigate to the ops library directory and install:
+
+```bash
 cd pointnet2_ops_lib
 python setup.py install
+```
 
-modificar o setup.py
+#### Modified setup.py Configuration
+
+```python
 import glob
 import os
 import os.path as osp
-
 from setuptools import find_packages, setup
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension
 
-this_dir = osp.dirname(osp.abspath(**file**))
-\_ext_src_root = osp.join("pointnet2_ops", "\_ext-src")
-\_ext_sources = [
-osp.join(_ext_src_root, "src", "sampling_gpu.cu"),
-# Adicione outros arquivos .cu se necessário
+this_dir = osp.dirname(osp.abspath(__file__))
+_ext_src_root = osp.join("pointnet2_ops", "_ext-src")
+_ext_sources = [
+    osp.join(_ext_src_root, "src", "sampling_gpu.cu"),
 ]
-\_ext_headers = glob.glob(osp.join(\_ext_src_root, "include", "\*"))
+_ext_headers = glob.glob(osp.join(_ext_src_root, "include", "*"))
 
 requirements = ["torch>=1.4"]
 
-exec(open(osp.join("pointnet2_ops", "\_version.py")).read())
+exec(open(osp.join("pointnet2_ops", "_version.py")).read())
 
-# Set TORCH_CUDA_ARCH_LIST to include compute capability 8.9
-
+# Configure CUDA architecture
 os.environ["TORCH_CUDA_ARCH_LIST"] = "8.9"
 
 setup(
-name="pointnet2_ops",
-version=**version**,
-author="Erik Wijmans",
-packages=find_packages(),
-install_requires=requirements,
-ext_modules=[
-CUDAExtension(
-name="pointnet2_ops.\_ext",
-sources=\_ext_sources,
-extra_compile_args={
-"cxx": ["-O3"],
-"nvcc": [
-"-DCUDA_HAS_FP16=1",
-"-D__CUDA_NO_HALF_OPERATORS__",
-"-D__CUDA_NO_HALF_CONVERSIONS__",
-"-D__CUDA_NO_HALF2_OPERATORS__",
-# Include only architectures supported by your GPU
-"-gencode=arch=compute_89,code=sm_89",
-# Optionally include PTX code for future compatibility
-"-gencode=arch=compute_89,code=compute_89",
-],
-},
-include_dirs=[osp.join(this_dir, _ext_src_root, "include")],
+    name="pointnet2_ops",
+    version=__version__,
+    author="Erik Wijmans",
+    packages=find_packages(),
+    install_requires=requirements,
+    ext_modules=[
+        CUDAExtension(
+            name="pointnet2_ops._ext",
+            sources=_ext_sources,
+            extra_compile_args={
+                "cxx": ["-O3"],
+                "nvcc": [
+                    "-DCUDA_HAS_FP16=1",
+                    "-D__CUDA_NO_HALF_OPERATORS__",
+                    "-D__CUDA_NO_HALF_CONVERSIONS__",
+                    "-D__CUDA_NO_HALF2_OPERATORS__",
+                    "-gencode=arch=compute_89,code=sm_89",
+                    "-gencode=arch=compute_89,code=compute_89",
+                ],
+            },
+            include_dirs=[osp.join(this_dir, _ext_src_root, "include")],
+        )
+    ],
+    cmdclass={"build_ext": BuildExtension},
+    include_package_data=True,
 )
-],
-cmdclass={"build_ext": BuildExtension},
-include_package_data=True,
-)
+```
 
-# Outras Dependências
+### 4. Additional Dependencies
 
-pip install numpy
-pip install sklearn
-pip install tqdm
-pip install torchnet
-pip install plyfile
-pip install open3d
-pip install matplotlib
+Install required Python packages:
 
-# Estrutura do Projeto
+```bash
+pip install numpy sklearn tqdm torchnet plyfile open3d matplotlib
+```
 
-seu_projeto/
+## Project Structure
+
+```
+your_project/
 ├── DATA/
-│ ├── train/
-│ └── test/
+│   ├── train/
+│   └── test/
 ├── a_a_a.py
 ├── a_modelo_segmentation_v1.0.py
 ├── a_modelo_segmentation_v1.1.py
 └── pointnet.py
+```
 
-# Possíveis Problemas e Soluções
+## Troubleshooting
 
-- Se houver erro ao compilar o Pointnet++, verifique se as versões do CUDA toolkit correspondem
-- Em caso de erro de memória CUDA, ajuste o batch_size nos arquivos de configuração
-- Para problemas com CUDA_LAUNCH_BLOCKING, adicione:
+### Common Issues and Solutions
 
-os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+1. **CUDA Compilation Errors**
+
+   - Verify CUDA toolkit version matches PyTorch installation
+   - Ensure CUDA paths are correctly set in environment variables
+
+2. **CUDA Memory Errors**
+
+   - Adjust batch size in configuration files
+   - Monitor GPU memory usage during training
+
+3. **CUDA Launch Blocking**
+   - Add the following to your script:
+     ```python
+     import os
+     os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+     ```
+
+### Additional Tips
+
+- Keep GPU drivers up to date
+- Monitor system resources during training
+- Use `nvidia-smi` to check GPU usage and memory consumption
+
+## Contributing
+
+Please submit issues and pull requests for any improvements to the setup process.
+
+## License
+
+[Specify your license here]
